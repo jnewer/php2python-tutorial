@@ -537,6 +537,7 @@ prices = re.findall(r'¥(\\d+)', html)
 # ['99', '199']
 
 # re.sub — 替换
+input_str = "hello world! 2024"
 clean = re.sub(r'[^a-zA-Z0-9]', '_', input_str)
 
 # re.compile — 预编译 (推荐!)
@@ -651,7 +652,8 @@ else:
 status = "pass" if score >= 60 else "fail"
 
 # 或运算符 (类似 null 合并)
-name = request.get("name") or "Anonymous"
+request = {"name": None, "age": 25}
+name = request.get("name") or "Anonymous"  # name = 'Anonymous'
 
 # match 语句 (Python 3.10+)
 match grade:
@@ -817,7 +819,7 @@ user.values()               # dict_values
 user.items()                # dict_items (键值对)
 user.get("phone", "N/A")    # 带默认值
 del user["email"]           # 删除
-user.pop("email")           # 删除并返回`,
+user.pop("age")             # 删除并返回 26`,
             note: 'Python 的 dict.get(key, default) 是 PHP $arr[$key] ?? $default 的替代，但更安全。',
           },
           {
@@ -894,7 +896,8 @@ $nums = [1, 2, 3];
 $result = max(...$nums);  // 3
 
 // PHP: 合并数组
-$all = [...$arr1, ...$arr2];`,
+$arr1 = [1, 2]; $arr2 = [3, 4];
+$all = [...$arr1, ...$arr2];  // [1, 2, 3, 4]`,
             python: `# Python: zip() 同时遍历多个列表
 names = ["张三", "李四", "王五"]
 scores = [90, 85, 92]
@@ -1127,7 +1130,7 @@ print(a >= {3, 4})                  # True (超集)
 squares = {x ** 2 for x in range(5)} # {0, 1, 4, 9, 16}
 
 # frozenset: 不可变集合，可作为字典 key
-fs = frozenset([1, 2, 3])
+fs = frozenset([1, 2])
 data = {frozenset([1,2]): "group_a", frozenset([3,4]): "group_b"}
 print(data[fs])                      # group_a
 
@@ -1420,7 +1423,7 @@ $parts = explode(",", $csv, 3);      // ["a", "b", "c,d,e"]
 
 // 字符串搜索
 $pos = strpos($url, "/api");         // 19
-if ($pos !== false) { ... }
+if ($pos !== false) { /* ... */ }
 
 // 判断字符类型
 ctype_digit("12345");                 // true
@@ -1438,7 +1441,8 @@ print(url.endswith("/users"))        # True
 
 # startswith/endswith 支持元组参数 (多条件判断)
 print(url.startswith(("http://", "https://")))  # True
-print(filename.endswith((".jpg", ".png", ".gif")))  # 批量判断
+filename = "photo.jpg"
+print(filename.endswith((".jpg", ".png", ".gif")))  # 批量判断: True
 
 # 去除空白字符
 name = "  hello world  "
@@ -1622,6 +1626,14 @@ def process_data():
 process_data()  # 自动打印耗时
 
 # 多个装饰器叠加
+def log_calls(func):
+    '''打印函数调用的装饰器'''
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        print(f"调用 {func.__name__}{args}")
+        return func(*args, **kwargs)
+    return wrapper
+
 @timer
 @log_calls
 def important_function():
@@ -1853,7 +1865,7 @@ class RateLimitMiddleware {
 }
 
 // 使用
-Route::middleware(new RateLimitMiddleware(100, 60))->group(function () { ... });`,
+Route::middleware(new RateLimitMiddleware(100, 60))->group(function () { /* ... */ });`,
             python: `import functools
 import time
 
@@ -2449,6 +2461,7 @@ enum Status: string {
     case Pending = 'pending';
 }
 
+$user = new stdClass();
 $user->status = Status::Active;
 $value = $user->status->value;  // 'active'
 
@@ -2474,6 +2487,10 @@ class Status(StrEnum):
     INACTIVE = "inactive"
     PENDING = "pending"
 
+class _User:
+    pass
+
+user = _User()
 user.status = Status.ACTIVE
 print(user.status)     # Status.ACTIVE
 print(user.status.value)  # 'active'
@@ -2952,6 +2969,9 @@ logger.error("错误信息")
 logger.critical("严重错误")
 
 # @contextmanager — 简洁的上下文管理器
+def connect(url):  # 模拟数据库连接
+    return type('conn', (), {'close': lambda self: None, 'query': lambda self, sql: None})()
+
 @contextmanager
 def database_connection(url: str):
     conn = connect(url)
@@ -4007,7 +4027,8 @@ foreach ($users as $user) {
 // ["技术" => ["张三", "王五"], "市场" => ["李四"]]
 
 // PHP: 合并多个数组
-$merged = array_merge($arr1, $arr2, $arr3);
+$arr1 = [1, 2]; $arr2 = [3, 4]; $arr3 = [5, 6];
+$merged = array_merge($arr1, $arr2, $arr3);  // [1, 2, 3, 4, 5, 6]
 
 // PHP: 笛卡尔积 (需要嵌套循环)
 $sizes = ["S", "M", "L"];
