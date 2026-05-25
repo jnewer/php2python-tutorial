@@ -6,8 +6,8 @@ const io = new Server(httpServer, {
   // DO NOT change the path, it is used by Caddy to forward the request to the correct port
   path: '/',
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
+    origin: process.env.ALLOWED_ORIGIN || "http://localhost:3000",
+    methods: ["GET", "POST"],
   },
   pingTimeout: 60000,
   pingInterval: 25000,
@@ -28,7 +28,7 @@ interface Message {
 
 const users = new Map<string, User>()
 
-const generateMessageId = () => Math.random().toString(36).substr(2, 9)
+const generateMessageId = () => Math.random().toString(36).substring(2, 11)
 
 const createSystemMessage = (content: string): Message => ({
   id: generateMessageId(),

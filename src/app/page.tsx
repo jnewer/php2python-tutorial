@@ -1,731 +1,41 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback, useSyncExternalStore } from 'react';
-import { motion, useInView, AnimatePresence } from 'framer-motion';
-import { useTheme } from 'next-themes';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronDown,
-  ChevronRight,
-  Clock,
   BookOpen,
-  Zap,
-  ArrowRight,
-  CheckCircle2,
-  Star,
   Code2,
   Terminal,
   GraduationCap,
-  BarChart3,
   Sparkles,
-  Copy,
-  CheckCircle,
-  Lightbulb,
   TrendingUp,
   Layers,
   Menu,
   X,
-  ArrowUp,
   Search,
-  Sun,
-  Moon,
   Expand,
   Shrink,
-  PartyPopper,
   RotateCcw,
   Filter,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import { modules, phpToPythonMap, learningPath, type Module, type CodeComparison } from '@/lib/course-data';
+import { modules, phpToPythonMap } from '@/lib/course-data';
 import { cn } from '@/lib/utils';
-
-/* ═══════════════════════════════════════
-   Constants
-   ═══════════════════════════════════════ */
-
-const HEADER_HEIGHT = 56;
-
-const NAV_ITEMS = [
-  { id: 'overview', label: '课程概览', icon: BarChart3 },
-  { id: 'roadmap', label: '学习路线', icon: TrendingUp },
-  { id: 'modules', label: '课程模块', icon: Layers },
-  { id: 'cheatsheet', label: '速查表', icon: Terminal },
-] as const;
-
-// STATS computed dynamically from actual data below
-
-const DIFF_COLORS: Record<string, string> = {
-  '入门': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-  '基础': 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-  '进阶': 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
-  '高级': 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-};
-
-const DIFFICULTY_OPTIONS = ['全部', '入门', '基础', '进阶', '高级'] as const;
-
-const QUICK_TIPS = [
-  {
-    icon: Terminal,
-    title: '安装 Python',
-    tips: [
-      { label: 'python.org 下载安装', url: 'https://www.python.org/downloads/' },
-      { label: 'VS Code + Python 扩展', url: 'https://code.visualstudio.com/docs/languages/python' },
-      { label: '使用 venv 隔离环境', url: 'https://docs.python.org/3/library/venv.html' },
-    ],
-    color: 'text-emerald-600 dark:text-emerald-400',
-    bg: 'bg-emerald-500/10',
-  },
-  {
-    icon: Zap,
-    title: '常用命令',
-    tips: [
-      { label: 'pip install 包名', url: 'https://docs.python.org/3/pip/commands.html#install' },
-      { label: 'python script.py' },
-      { label: 'pip freeze > requirements.txt', url: 'https://pip.pypa.io/en/stable/cli/pip_freeze/' },
-    ],
-    color: 'text-amber-600 dark:text-amber-400',
-    bg: 'bg-amber-500/10',
-  },
-  {
-    icon: Code2,
-    title: '学习资源',
-    tips: [
-      { label: 'FastAPI 官方文档', url: 'https://fastapi.tiangolo.com' },
-      { label: 'Python 官方文档', url: 'https://docs.python.org/3/' },
-      { label: 'LeetCode 刷题练习', url: 'https://leetcode.cn' },
-    ],
-    color: 'text-violet-600 dark:text-violet-400',
-    bg: 'bg-violet-500/10',
-  },
-] as const;
-
-/* ═══════════════════════════════════════
-   localStorage helpers
-   ═══════════════════════════════════════ */
-
-const STORAGE_KEY_PROGRESS = 'php-python-course-progress';
-
-/* ─── Progress external store (useSyncExternalStore) ─── */
-let progressListeners: (() => void)[] = [];
-let progressCache: Set<string> | null = null;
-
-function subscribeProgress(callback: () => void) {
-  progressListeners.push(callback);
-  return () => { progressListeners = progressListeners.filter(l => l !== callback); };
-}
-
-function getProgressSnapshot(): Set<string> {
-  if (progressCache === null) {
-    progressCache = loadProgressFromStorage();
-  }
-  return progressCache;
-}
-
-const EMPTY_SET = new Set<string>();
-function getServerProgressSnapshot(): Set<string> {
-  return EMPTY_SET;
-}
-
-function updateProgress(updater: (prev: Set<string>) => Set<string>) {
-  const prev = progressCache ?? new Set();
-  const next = updater(prev);
-  progressCache = next;
-  saveProgressToStorage(next);
-  progressListeners.forEach(l => l());
-}
-
-function loadProgressFromStorage(): Set<string> {
-  if (typeof window === 'undefined') return new Set();
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_PROGRESS);
-    if (raw) return new Set(JSON.parse(raw) as string[]);
-  } catch { /* ignore */ }
-  return new Set();
-}
-
-function saveProgressToStorage(set: Set<string>) {
-  try {
-    localStorage.setItem(STORAGE_KEY_PROGRESS, JSON.stringify([...set]));
-  } catch { /* ignore */ }
-}
-
-/* ─── prefers-reduced-motion hook ─── */
-function usePrefersReducedMotion() {
-  return useSyncExternalStore(
-    (callback) => {
-      const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-      mq.addEventListener('change', callback);
-      return () => mq.removeEventListener('change', callback);
-    },
-    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-    () => false,
-  );
-}
-
-/* ─── useHydrated hook ─── */
-function useHydrated() {
-  return useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
-}
-
-/* ─── Animated Counter ─── */
-function AnimatedCounter({ target, suffix = '' }: { target: number; suffix?: string }) {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true });
-
-  useEffect(() => {
-    if (!inView) return;
-    let current = 0;
-    const step = Math.max(1, Math.floor(target / 40));
-    const timer = setInterval(() => {
-      current += step;
-      if (current >= target) {
-        setCount(target);
-        clearInterval(timer);
-      } else {
-        setCount(current);
-      }
-    }, 30);
-    return () => clearInterval(timer);
-  }, [inView, target]);
-
-  return <span ref={ref}>{count}{suffix}</span>;
-}
-
-/* ─── Fade-in wrapper ─── */
-function FadeIn({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-60px' });
-  const reduced = usePrefersReducedMotion();
-  return (
-    <motion.div
-      ref={ref}
-      initial={reduced ? undefined : { opacity: 0, y: 30 }}
-      animate={inView || reduced ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: reduced ? 0 : 0.5, delay: reduced ? 0 : delay, ease: 'easeOut' }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-/* ─── Code Block with line numbers + toast feedback ─── */
-function CodeBlock({ code, language, title, onCopy }: {
-  code: string;
-  language: 'php' | 'python';
-  title?: string;
-  onCopy?: (lang: string) => void;
-}) {
-  const [copied, setCopied] = useState(false);
-  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lines = code.split('\n');
-  const lineCount = lines.length;
-
-  // Cleanup timer on unmount
-  useEffect(() => () => { if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current); }, []);
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(code);
-    } catch {
-      const textarea = document.createElement('textarea');
-      textarea.value = code;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-    }
-    setCopied(true);
-    onCopy?.(language === 'php' ? 'PHP' : 'Python');
-    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
-    copiedTimerRef.current = setTimeout(() => setCopied(false), 2000);
-  };
-
-  const isPhp = language === 'php';
-  return (
-    <div className={cn(
-      'rounded-xl border overflow-hidden',
-      isPhp
-        ? 'bg-gradient-to-br from-indigo-500/[0.07] to-purple-500/[0.07] border-indigo-500/20'
-        : 'bg-gradient-to-br from-amber-500/[0.07] to-yellow-500/[0.07] border-amber-500/20'
-    )}>
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/50 bg-background/50">
-        <div className="flex items-center gap-2">
-          <span className={cn(
-            'px-2 py-0.5 rounded-md text-[11px] font-bold tracking-wide uppercase',
-            isPhp
-              ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400'
-              : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
-          )}>
-            {isPhp ? 'PHP' : 'Python'}
-          </span>
-          {title && <span className="text-xs text-muted-foreground">{title}</span>}
-          <span className="text-[10px] text-muted-foreground/60 ml-auto mr-1">{lineCount} 行</span>
-        </div>
-        <button
-          onClick={handleCopy}
-          className="p-1 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-          title={copied ? '已复制' : '复制代码'}
-          aria-label={copied ? '代码已复制' : '复制代码'}
-        >
-          {copied ? <CheckCircle className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-        </button>
-      </div>
-      <div className="max-h-[28rem] overflow-auto overscroll-contain">
-        <div className="flex min-w-0">
-          {/* Line numbers — sticky left column */}
-          <div className="sticky left-0 z-10 select-none border-r border-border/30 bg-muted/30 backdrop-blur-sm px-2 py-3 text-right shrink-0">
-            {lines.map((_, i) => (
-              <div key={i} className="text-[11px] leading-[1.7] text-muted-foreground/40 font-mono whitespace-nowrap">
-                {i + 1}
-              </div>
-            ))}
-          </div>
-          {/* Code content */}
-          <pre className="px-3 py-3 text-[13px] leading-[1.7] min-w-0 flex-1">
-            <code className="font-mono text-foreground/85 whitespace-pre" lang={language === 'php' ? 'php' : 'python'}>{code}</code>
-          </pre>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Code Comparison Panel ─── */
-function CodeComparisonPanel({ comparison, onCopy }: { comparison: CodeComparison; onCopy?: (lang: string) => void }) {
-  return (
-    <div className="space-y-3">
-      <h5 className="text-sm font-semibold text-foreground flex items-center gap-2">
-        <Code2 className="h-4 w-4 text-primary" />
-        {comparison.title}
-      </h5>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <CodeBlock code={comparison.php} language="php" onCopy={onCopy} />
-        <CodeBlock code={comparison.python} language="python" onCopy={onCopy} />
-      </div>
-      {comparison.note && (
-        <div className="flex gap-2 items-start p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-          <Lightbulb className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
-          <p className="text-sm text-emerald-700 dark:text-emerald-300 leading-relaxed">{comparison.note}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ─── Toast Notification ─── */
-function Toast({ message, type = 'copy' }: { message: string; type?: 'copy' | 'complete' | 'uncomplete' | 'celebrate' }) {
-  const icons = {
-    copy: <CheckCircle className="h-4 w-4 text-green-400" />,
-    complete: <CheckCircle2 className="h-4 w-4 text-emerald-400" />,
-    uncomplete: <RotateCcw className="h-4 w-4 text-amber-400" />,
-    celebrate: <PartyPopper className="h-4 w-4 text-amber-400" />,
-  };
-  return (
-    <AnimatePresence>
-      {message && (
-        <motion.div
-          key="toast"
-          initial={{ opacity: 0, y: 10, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 10, scale: 0.95 }}
-          transition={{ duration: 0.2 }}
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] px-4 py-2.5 rounded-xl bg-foreground text-background shadow-xl flex items-center gap-2 text-sm font-medium pointer-events-none"
-        >
-          {icons[type]}
-          {message}
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-
-/* ─── Scroll-to-Top Button ─── */
-function ScrollToTop() {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 600);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  return (
-    <AnimatePresence>
-      {visible && (
-        <motion.button
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-6 right-6 z-50 p-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-shadow"
-          aria-label="回到顶部"
-        >
-          <ArrowUp className="h-5 w-5" />
-        </motion.button>
-      )}
-    </AnimatePresence>
-  );
-}
-
-/* ─── Celebration Confetti ─── */
-function CelebrationOverlay({ show, onDone }: { show: boolean; onDone: () => void }) {
-  useEffect(() => {
-    if (show) {
-      const timer = setTimeout(onDone, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [show, onDone]);
-
-  if (!show) return null;
-
-  const emojis = ['🎉', '🏆', '⭐', '✨', '🌟', '🎊', '💫', '🥇'];
-  const particles = Array.from({ length: 24 }, (_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    delay: Math.random() * 0.5,
-    duration: 2 + Math.random() * 1.5,
-    emoji: emojis[i % emojis.length],
-    size: 20 + Math.random() * 16,
-  }));
-
-  return (
-    <div className="fixed inset-0 z-[200] pointer-events-none overflow-hidden">
-      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
-      {particles.map(p => (
-        <motion.div
-          key={p.id}
-          initial={{ top: '-5%', left: `${p.x}%`, opacity: 1, rotate: 0, scale: 0 }}
-          animate={{ top: '105%', opacity: [1, 1, 0], rotate: [0, 360], scale: [0, 1.2, 0.8] }}
-          transition={{ duration: p.duration, delay: p.delay, ease: 'easeIn' }}
-          className="absolute"
-          style={{ fontSize: p.size }}
-        >
-          {p.emoji}
-        </motion.div>
-      ))}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.3 }}
-        className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center"
-      >
-        <div className="bg-background rounded-2xl shadow-2xl px-8 py-6 border">
-          <div className="text-5xl mb-3">🎉</div>
-          <h3 className="text-xl font-bold mb-1">恭喜完成！</h3>
-          <p className="text-muted-foreground text-sm">你已完成本模块所有课时</p>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
-/* ─── Module Card ─── */
-function ModuleCard({ module, isExpanded, onToggle, completedLessons, onCompleteLesson, onCopyCode, showToast }: {
-  module: Module;
-  isExpanded: boolean;
-  onToggle: () => void;
-  completedLessons: Set<string>;
-  onCompleteLesson: (key: string) => void;
-  onCopyCode?: (lang: string) => void;
-  showToast: (msg: string, type: 'complete' | 'uncomplete') => void;
-}) {
-  const totalLessons = module.lessons.length;
-  const completedCount = module.lessons.filter(l => completedLessons.has(`${module.id}-${l.title}`)).length;
-  const progress = totalLessons > 0 ? (completedCount / totalLessons) * 100 : 0;
-  const [justCompleted, setJustCompleted] = useState(false);
-
-  const handleComplete = (lessonKey: string, lessonTitle: string) => {
-    const wasCompleted = completedLessons.has(lessonKey);
-    onCompleteLesson(lessonKey);
-    if (!wasCompleted) {
-      showToast(`已完成: ${lessonTitle}`, 'complete');
-    } else {
-      showToast(`已取消: ${lessonTitle}`, 'uncomplete');
-    }
-  };
-
-  // Detect module just completed
-  useEffect(() => {
-    if (completedCount === totalLessons && totalLessons > 0 && !justCompleted) {
-      const timer = setTimeout(() => {
-        setJustCompleted(true);
-        setTimeout(() => setJustCompleted(false), 3000);
-      }, 400);
-      return () => clearTimeout(timer);
-    }
-  }, [completedCount, totalLessons, justCompleted]);
-
-  return (
-    <>
-      <Card className={cn(
-        'overflow-hidden transition-all duration-300 border-2',
-        isExpanded
-          ? 'border-primary/30 shadow-lg shadow-primary/5'
-          : 'border-border hover:border-primary/15 hover:shadow-md'
-      )}>
-        <button
-          onClick={onToggle}
-          className="w-full text-left"
-          aria-expanded={isExpanded}
-          aria-controls={`module-content-${module.id}`}
-        >
-          <CardHeader className="pb-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3 flex-1 min-w-0">
-                <div className={cn(
-                  'flex items-center justify-center w-12 h-12 rounded-xl text-xl shrink-0 bg-gradient-to-br shadow-sm',
-                  module.color
-                )}>
-                  {module.icon}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <Badge variant="secondary" className="text-xs px-1.5 py-0">{module.id}/8</Badge>
-                    <span className={cn('px-2 py-0.5 rounded-full text-[11px] font-semibold', DIFF_COLORS[module.difficulty])}>
-                      {module.difficulty}
-                    </span>
-                    {completedCount === totalLessons && totalLessons > 0 && (
-                      <Badge className="text-[10px] px-1.5 py-0 gap-0.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0">
-                        <CheckCircle2 className="h-3 w-3" /> 已完成
-                      </Badge>
-                    )}
-                  </div>
-                  <CardTitle className="text-base md:text-lg leading-tight">{module.title}</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{module.description}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0 mt-1">
-                <Badge variant="outline" className="text-xs gap-1 hidden sm:inline-flex">
-                  <Clock className="h-3 w-3" />
-                  {module.duration}
-                </Badge>
-                <motion.div
-                  animate={{ rotate: isExpanded ? 180 : 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                </motion.div>
-              </div>
-            </div>
-            <div className="mt-2 flex items-center gap-3">
-              <Progress value={progress} className="h-1.5 flex-1" />
-              <span className="text-xs text-muted-foreground shrink-0">
-                {completedCount}/{totalLessons} 课时
-              </span>
-            </div>
-          </CardHeader>
-        </button>
-
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div
-              id={`module-content-${module.id}`}
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
-              className="overflow-hidden"
-            >
-              <CardContent className="pt-0">
-                <Separator className="mb-4" />
-
-                {module.phpConcept && (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-4 p-3 rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 shrink-0">PHP</span>
-                      <span className="text-sm text-muted-foreground">{module.phpConcept}</span>
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 hidden sm:block self-center" />
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 shrink-0">Python</span>
-                      <span className="text-sm text-foreground font-medium">{module.pythonConcept}</span>
-                    </div>
-                  </div>
-                )}
-
-                <Accordion type="single" collapsible className="w-full">
-                  {module.lessons.map((lesson, idx) => {
-                    const lessonKey = `${module.id}-${lesson.title}`;
-                    const isCompleted = completedLessons.has(lessonKey);
-                    return (
-                      <AccordionItem key={idx} value={`lesson-${idx}`} className="border-border/60">
-                        <AccordionTrigger className="py-3 hover:no-underline">
-                          <div className="flex items-center gap-3 text-left">
-                            <div
-                              role="checkbox"
-                              tabIndex={0}
-                              aria-checked={isCompleted}
-                              aria-label={isCompleted ? `取消完成: ${lesson.title}` : `标记完成: ${lesson.title}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleComplete(lessonKey, lesson.title);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleComplete(lessonKey, lesson.title);
-                                }
-                              }}
-                              className={cn(
-                                'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 hover:scale-110 cursor-pointer',
-                                isCompleted
-                                  ? 'bg-green-500 border-green-500 text-white'
-                                  : 'border-muted-foreground/30 hover:border-primary'
-                              )}
-                            >
-                              {isCompleted && <CheckCircle2 className="h-3.5 w-3.5" />}
-                            </div>
-                            <div className="min-w-0">
-                              <span className={cn('text-sm font-medium', isCompleted && 'line-through text-muted-foreground')}>
-                                {lesson.title}
-                              </span>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <Badge variant="outline" className="text-[10px] px-1 py-0 gap-0.5">
-                                  <Clock className="h-2.5 w-2.5" />
-                                  {lesson.duration}
-                                </Badge>
-                                <span className="text-[11px] text-muted-foreground">
-                                  {lesson.codeExamples.length} 个代码对比
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-4 pl-8 pt-2">
-                            <p className="text-sm text-muted-foreground leading-relaxed">{lesson.description}</p>
-
-                            <div className="space-y-1.5">
-                              <h6 className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-                                <Star className="h-3.5 w-3.5 text-amber-500" />
-                                核心要点
-                              </h6>
-                              <ul className="space-y-1">
-                                {lesson.keyPoints.map((point, pi) => (
-                                  <li key={pi} className="flex items-start gap-2 text-sm text-muted-foreground">
-                                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary/40 shrink-0" />
-                                    {point}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-
-                            <div className="space-y-4">
-                              <h6 className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-                                <Code2 className="h-3.5 w-3.5 text-primary" />
-                                代码对比
-                              </h6>
-                              {lesson.codeExamples.map((comp, ci) => (
-                                <CodeComparisonPanel key={ci} comparison={comp} onCopy={onCopyCode} />
-                              ))}
-                            </div>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    );
-                  })}
-                </Accordion>
-              </CardContent>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </Card>
-      <CelebrationOverlay show={justCompleted} onDone={() => setJustCompleted(false)} />
-    </>
-  );
-}
-
-/* ─── Learning Path Timeline ─── */
-function LearningPathTimeline() {
-  return (
-    <div className="relative">
-      <div className="absolute left-6 md:left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-emerald-500 via-violet-500 to-fuchsia-500 opacity-30" />
-
-      <div className="space-y-4">
-        {learningPath.map((phase, idx) => (
-          <FadeIn key={idx} delay={idx * 0.1}>
-            <div className="relative flex gap-4 md:gap-6">
-              <div
-                className="relative z-10 w-12 md:w-16 h-12 md:h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-lg"
-                style={{ backgroundColor: `${phase.color}15`, border: `2px solid ${phase.color}40` }}
-              >
-                <span className="text-sm font-bold" style={{ color: phase.color }}>
-                  Day {phase.day}
-                </span>
-              </div>
-
-              <Card className="flex-1 hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-sm mb-2">{phase.title}</h4>
-                  <div className="flex flex-wrap gap-1.5">
-                    {phase.milestones.map((m, mi) => (
-                      <Badge key={mi} variant="secondary" className="text-[11px]">
-                        {m}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </FadeIn>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Theme Toggle ─── */
-function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const mounted = useHydrated();
-
-  if (!mounted || !resolvedTheme) return <div className="w-8 h-8" />;
-
-  const isDark = resolvedTheme === 'dark';
-
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      aria-label={isDark ? '切换亮色模式' : '切换暗色模式'}
-      className="gap-1.5 text-xs"
-    >
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={isDark ? 'moon' : 'sun'}
-          initial={{ rotate: -90, opacity: 0 }}
-          animate={{ rotate: 0, opacity: 1 }}
-          exit={{ rotate: 90, opacity: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </motion.div>
-      </AnimatePresence>
-      <span className="hidden sm:inline">{isDark ? '亮色' : '暗色'}</span>
-    </Button>
-  );
-}
+import { NAV_ITEMS, HEADER_HEIGHT, DIFF_COLORS, DIFFICULTY_OPTIONS, QUICK_TIPS } from '@/lib/constants';
+import { subscribeProgress, getProgressSnapshot, getServerProgressSnapshot, updateProgress } from '@/lib/progress-store';
+import { AnimatedCounter } from '@/components/course/animated-counter';
+import { FadeIn } from '@/components/course/fade-in';
+import { Toast } from '@/components/course/toast';
+import { ScrollToTop } from '@/components/course/scroll-to-top';
+import { ModuleCard } from '@/components/course/module-card';
+import { LearningPathTimeline } from '@/components/course/learning-path-timeline';
+import { ThemeToggle } from '@/components/course/theme-toggle';
 
 /* ═══════════════════════════════════════
    Main Page
@@ -834,7 +144,7 @@ export default function PythonCoursePage() {
     }
   }, []);
 
-  // Close mobile menu & Active section tracking via IntersectionObserver
+  // Active section tracking via IntersectionObserver
   useEffect(() => {
     const sectionIds = NAV_ITEMS.map(n => n.id);
     const observer = new IntersectionObserver(
@@ -854,12 +164,10 @@ export default function PythonCoursePage() {
     return () => observer.disconnect();
   }, []);
 
-  // Unified scroll handler — replaces 3 separate listeners
+  // Unified scroll handler
   const scrollProgressRef = useRef(0);
   const [scrollProgress, setScrollProgress] = useState(0);
 
-  // All complete celebration
-  // (isAllComplete used in progress card below)
   useEffect(() => {
     let ticking = false;
     const onScroll = () => {
@@ -869,7 +177,6 @@ export default function PythonCoursePage() {
         const scrollY = window.scrollY;
         const total = document.documentElement.scrollHeight - window.innerHeight;
         const newProgress = total > 0 ? (scrollY / total) * 100 : 0;
-        // Only update state if changed (avoid re-renders)
         if (Math.abs(newProgress - scrollProgressRef.current) > 0.5) {
           scrollProgressRef.current = newProgress;
           setScrollProgress(newProgress);
@@ -1125,7 +432,7 @@ export default function PythonCoursePage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => setShowResetConfirm(true)}
-                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive cursor-pointer"
                             aria-label="重置进度"
                             title="重置进度"
                           >
@@ -1194,11 +501,6 @@ export default function PythonCoursePage() {
                           'h-9 text-xs px-2.5',
                           difficultyFilter === diff && DIFF_COLORS[diff] && 'border-0'
                         )}
-                        style={
-                          difficultyFilter !== '全部' && DIFF_COLORS[diff]
-                            ? undefined
-                            : undefined
-                        }
                       >
                         {diff}
                       </Button>
@@ -1362,7 +664,7 @@ export default function PythonCoursePage() {
                           );
                           return tipData.url
                             ? <a key={ti} href={tipData.url} target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">{content}</a>
-                            : content;
+                            : <div key={ti}>{content}</div>;
                         })}
                       </ul>
                     </CardContent>
@@ -1374,7 +676,7 @@ export default function PythonCoursePage() {
         </section>
       </main>
 
-      {/* ─── Footer (sticky) ─── */}
+      {/* ─── Footer ─── */}
       <footer className="border-t bg-muted/30 pb-14 md:pb-0">
         <div className="container mx-auto px-4 md:px-6 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">

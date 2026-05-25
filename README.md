@@ -75,6 +75,17 @@ bun run start
 
 生产环境默认监听 3000 端口。
 
+### WebSocket 示例
+
+项目包含一个 WebSocket 聊天室示例（教学用途）：
+
+```bash
+# 启动 WebSocket 服务器
+bun run ws:server
+```
+
+示例代码位于 `examples/websocket/` 目录下。
+
 ## 部署
 
 ### Docker
@@ -108,18 +119,6 @@ docker build -t php2python-tutorial .
 docker run -p 3000:3000 php2python-tutorial
 ```
 
-### 静态导出
-
-如果不需要服务端功能，可以导出为纯静态文件：
-
-```bash
-# 修改 next.config.ts
-# output: "export"
-
-bun run build
-# 静态文件在 .next/out 目录
-```
-
 ### Nginx 反向代理
 
 ```nginx
@@ -144,14 +143,40 @@ server {
 ```
 src/
 ├── app/
-│   ├── page.tsx          # 主页面（全部组件）
-│   ├── layout.tsx        # 根布局（主题 Provider）
-│   └── globals.css       # 全局样式
+│   ├── api/
+│   │   └── route.ts        # Health-check API
+│   ├── page.tsx             # 主页面
+│   ├── layout.tsx           # 根布局（主题 Provider）
+│   └── globals.css          # 全局样式 + Tailwind v4 配置
+├── components/
+│   ├── course/              # 课程组件
+│   │   ├── animated-counter.tsx
+│   │   ├── celebration-overlay.tsx
+│   │   ├── code-block.tsx
+│   │   ├── code-comparison-panel.tsx
+│   │   ├── fade-in.tsx
+│   │   ├── learning-path-timeline.tsx
+│   │   ├── module-card.tsx
+│   │   ├── scroll-to-top.tsx
+│   │   ├── theme-toggle.tsx
+│   │   └── toast.tsx
+│   └── ui/                  # shadcn/ui 组件库
+├── hooks/
+│   ├── use-hydrated.ts
+│   ├── use-prefers-reduced-motion.ts
+│   └── use-toast.ts
 ├── lib/
-│   ├── course-data.ts    # 课程数据（8模块36课时 + 速查表 + 学习路径）
-│   └── utils.ts          # 工具函数
-├── hooks/                # 自定义 Hooks
-└── components/ui/        # shadcn/ui 组件库
+│   ├── constants.ts         # 共享常量
+│   ├── course-data.ts       # 课程数据（8模块36课时 + 速查表 + 学习路径）
+│   ├── db.ts                # Prisma 客户端（待数据库集成使用）
+│   ├── progress-store.ts    # 学习进度持久化
+│   └── utils.ts             # 工具函数
+examples/
+├── websocket/               # WebSocket 聊天室示例
+│   ├── frontend.tsx
+│   └── server.ts
+prisma/
+└── schema.prisma            # 数据库 Schema（预留）
 ```
 
 ## 自定义

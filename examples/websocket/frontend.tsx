@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { io } from 'socket.io-client';
+import { useEffect, useState, type KeyboardEvent } from 'react';
+import { io, type Socket } from 'socket.io-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,13 +25,13 @@ export default function SocketDemo() {
   const [inputMessage, setInputMessage] = useState('');
   const [username, setUsername] = useState('');
   const [isUsernameSet, setIsUsernameSet] = useState(false);
-  const [socket, setSocket] = useState<any>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
     // Connect to websocket server
-    // Never use PORT in the URL, alyways use XTransformPort
+    // Never use PORT in the URL, always use XTransformPort
     // DO NOT change the path, it is used by Caddy to forward the request to the correct port
     const socketInstance = io('/?XTransformPort=3003', {
       transports: ['websocket', 'polling'],
@@ -97,7 +97,7 @@ export default function SocketDemo() {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Enter') {
       sendMessage();
     }
@@ -120,7 +120,7 @@ export default function SocketDemo() {
               <Input
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                onKeyPress={(e) => {
+                onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     handleJoin();
                   }
@@ -175,7 +175,7 @@ export default function SocketDemo() {
                 <Input
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyDown}
                   placeholder="Type a message..."
                   disabled={!isConnected}
                   className="flex-1"
