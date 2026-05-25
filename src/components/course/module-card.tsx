@@ -21,8 +21,10 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { CodeComparisonPanel } from '@/components/course/code-comparison-panel';
+import { Quiz } from '@/components/course/quiz';
 import { CelebrationOverlay } from '@/components/course/celebration-overlay';
 import { DIFF_COLORS } from '@/lib/constants';
+import { quizData } from '@/lib/quiz-data';
 import { cn } from '@/lib/utils';
 import type { Module } from '@/lib/course-data';
 
@@ -226,6 +228,11 @@ export function ModuleCard({ module, isExpanded, onToggle, completedLessons, onC
                                 <CodeComparisonPanel key={ci} comparison={comp} onCopy={onCopyCode} />
                               ))}
                             </div>
+
+                            {/* Quiz */}
+                            {quizData[`${module.id}-${idx}`] && (
+                              <Quiz questions={quizData[`${module.id}-${idx}`]} />
+                            )}
                           </div>
                         </AccordionContent>
                       </AccordionItem>

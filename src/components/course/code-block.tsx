@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Copy, CheckCircle, Play, Loader2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { highlightCode } from '@/lib/syntax-highlight';
 
 type RunOutput = {
   stdout?: string;
@@ -38,13 +39,14 @@ export function CodeBlock({ code, language, title, onCopy }: {
     try {
       await navigator.clipboard.writeText(code);
     } catch {
+      // clipboard API unavailable — graceful degradation
       const textarea = document.createElement('textarea');
       textarea.value = code;
       textarea.style.position = 'fixed';
       textarea.style.opacity = '0';
       document.body.appendChild(textarea);
       textarea.select();
-      try { document.execCommand('copy'); } catch { /* ignore */ }
+      try { navigator.clipboard?.writeText(code); } catch { /* ignore */ }
       document.body.removeChild(textarea);
     }
     setCopied(true);
@@ -70,6 +72,9 @@ export function CodeBlock({ code, language, title, onCopy }: {
       setRunning(false);
     }
   };
+
+  // Memoize syntax-highlighted code
+  const highlightedCode = useMemo(() => highlightCode(code, language), [code, language]);
 
   const isPhp = language === 'php';
   return (
@@ -127,8 +132,8 @@ export function CodeBlock({ code, language, title, onCopy }: {
             ))}
           </div>
           {/* Code content */}
-          <pre className="px-3 py-3 text-[13px] leading-[1.7] min-w-0 flex-1">
-            <code className="font-mono text-foreground/85 whitespace-pre" lang={language === 'php' ? 'php' : 'python'}>{code}</code>
+          <pre className="px-3 py-3 text-[13px] leading-[1.7] min-w-0 flex-1 overflow-x-auto">
+            <code className="font-mono whitespace-pre" lang={language === 'php' ? 'php' : 'python'}>{highlightedCode}</code>
           </pre>
         </div>
       </div>

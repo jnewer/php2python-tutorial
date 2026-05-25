@@ -4372,53 +4372,6 @@ async def test_delete_task(auth_client):
   },
 ];
 
-export const phpToPythonMap = [
-  { php: '$variable', python: 'variable', note: '去掉 $ 前缀' },
-  { php: 'echo / print', python: 'print()', note: '统一用 print 函数' },
-  { php: '. (字符串拼接)', python: 'f-string / +', note: '推荐使用 f-string' },
-  { php: 'array()', python: '[] / {} / ()', note: '列表/字典/元组' },
-  { php: 'array_push()', python: 'list.append()', note: '方法调用代替函数' },
-  { php: 'count()', python: 'len()', note: '内置函数' },
-  { php: 'isset()', python: "'key' in dict / is not None" },
-  { php: 'empty()', python: 'not value' },
-  { php: 'null', python: 'None', note: '首字母大写' },
-  { php: 'true / false', python: 'True / False', note: '首字母大写' },
-  { php: '&& / || / !', python: 'and / or / not', note: '更自然的关键词' },
-  { php: 'elseif', python: 'elif', note: '缩写不同' },
-  { php: 'foreach ($arr as $v)', python: 'for v in arr:', note: '更简洁' },
-  { php: 'function', python: 'def', note: '定义函数' },
-  { php: '__construct', python: '__init__', note: '构造函数' },
-  { php: '$this', python: 'self', note: '引用当前实例' },
-  { php: '->', python: '.', note: '对象访问' },
-  { php: '::', python: '.', note: '类访问' },
-  { php: 'try/catch', python: 'try/except', note: '异常处理' },
-  { php: 'require/include', python: 'import', note: '引入模块' },
-  { php: 'use Namespace\\Class', python: 'from module import Class' },
-  { php: 'composer require', python: 'pip install / poetry add' },
-  { php: '// 注释', python: '# 注释', note: '单行注释' },
-  { php: '/* */ 注释', python: '""" """ 注释', note: '多行/文档注释' },
-  { php: 'sprintf()', python: 'f-string', note: 'f"{var}" 更简洁强大' },
-  { php: 'json_encode/json_decode', python: 'json.dumps/json.loads', note: 'json 模块' },
-  { php: 'array_map()', python: 'map() / 列表推导式', note: '推荐列表推导式' },
-  { php: 'array_filter()', python: 'filter() / 列表推导式', note: '推荐列表推导式' },
-  { php: 'usort($arr, fn)', python: 'sorted(arr, key=)', note: 'key 参数更优雅' },
-  { php: 'array_combine()', python: 'dict(zip(keys, values))', note: 'zip 创建字典' },
-  { php: 'fn($x) => $x * 2', python: 'lambda x: x * 2', note: 'lambda 只能单行' },
-  { php: 'static method', python: '@staticmethod / @classmethod', note: '装饰器代替关键字' },
-  { php: 'new static()', python: 'cls() in @classmethod', note: '工厂模式' },
-  { php: 'class with __construct', python: '@dataclass', note: '自动生成样板代码' },
-  { php: 'Eloquent ORM', python: 'SQLAlchemy 2.0', note: 'Python 主流 ORM' },
-  { php: 'PHPUnit', python: 'pytest', note: '更简洁的测试框架' },
-  { php: '...$args (解包)', python: '*args / **kwargs', note: 'Python 解包更灵活' },
-];
-
-export const learningPath = [
-  { day: '1', title: '环境搭建', milestones: ['安装 Python', '配置 VS Code', '创建虚拟环境', '运行 Hello World', 'REPL 交互模式', 'pip 常用命令'], color: '#10b981' },
-  { day: '2-3', title: '基础语法', milestones: ['变量与类型', '字符串操作', '运算符', 'f-string 格式化', '正则表达式'], color: '#f59e0b' },
-  { day: '4-5', title: '控制流与数据结构', milestones: ['条件语句', '循环', '列表/字典', '元组/集合', '列表推导式', 'zip/map/filter', 'collections 容器', '深浅拷贝'], color: '#06b6d4' },
-  { day: '6-7', title: '函数编程', milestones: ['函数定义', 'Lambda', '装饰器', '模块与包管理'], color: '#8b5cf6' },
-  { day: '8-10', title: '面向对象', milestones: ['类与继承', '魔术方法', '类方法/静态方法', 'dataclass 数据类'], color: '#ef4444' },
-  { day: '11-12', title: '异常与文件', milestones: ['异常处理', '上下文管理器', '文件读写', 'JSON 处理'], color: '#14b8a6' },
-  { day: '13-15', title: 'Web 开发', milestones: ['FastAPI 入门', '模板引擎', 'ORM 操作', 'JWT 认证', 'CORS/中间件', '文件上传'], color: '#f97316' },
-  { day: '16-20', title: '高级实战', milestones: ['生成器', '异步编程', 'pytest 测试', 'collections/itertools', '综合实战: REST API'], color: '#d946ef' },
-];
+// Re-export from separated files for backward compatibility
+export { phpToPythonMap } from './cheatsheet-data';
+export { learningPath } from './learning-path-data';
