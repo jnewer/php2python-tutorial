@@ -77,14 +77,6 @@ bun run start
 
 ## 部署
 
-### Vercel (推荐)
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jnewer/php2python-tutorial)
-
-1. Fork 本仓库
-2. 在 [Vercel](https://vercel.com) 导入项目
-3. 点击 Deploy，无需额外配置
-
 ### Docker
 
 ```dockerfile
