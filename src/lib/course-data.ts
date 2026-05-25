@@ -393,10 +393,8 @@ $html = <<<HTML
 </div>
 HTML;
 
-// 5. PHP 8: 命名参数
-echo sprintf("%(name)s 今年 %(age)d 岁", [
-    'name' => $name, 'age' => $age,
-]);`,
+// 5. 使用位置参数格式化
+echo sprintf("%s 今年 %d 岁", $name, $age);`,
             python: `# Python: f-string 格式化 (推荐!)
 
 name = "张三"
@@ -438,100 +436,6 @@ html = f\"\"\"
 </div>
 \"\"\"`,
             note: 'f-string 是 Python 字符串格式的终极方案，比 % 格式化和 .format() 都更简洁。{} 内支持任意表达式、方法调用、格式说明符。调试语法 {var=} 是 Python 3.8+ 的新特性，调试时非常方便。',
-          },
-          {
-            title: '正则表达式 re 模块',
-            duration: '35 分钟',
-            description: 'PHP 开发者经常使用 preg_match/preg_replace 处理字符串。Python 的 re 模块功能等价但语法不同，配合 raw string 使用更加优雅。',
-            keyPoints: [
-              're.match() 从开头匹配，re.search() 搜索任意位置，re.findall() 返回所有匹配',
-              'Python 推荐 re.compile() 预编译正则，提升性能',
-              'raw string r"" 避免转义地狱，正则必备',
-              're.sub() 替代 PHP preg_replace，re.split() 替代 preg_split',
-              '命名捕获组 (?P<name>...) 比 PHP 的 (?P<name>) 更常用',
-            ],
-            codeExamples: [
-              {
-                title: '正则匹配对比',
-                php: `<?php
-// PHP: preg_match / preg_match_all
-$url = "https://www.example.com/path?id=123";
-
-// preg_match — 匹配一次
-if (preg_match('/^https?:\\/\\/(.+?)\\/(.+)$/', $url, $matches)) {
-    $domain = $matches[1];
-    $path = $matches[2];
-}
-
-// preg_match_all — 匹配所有
-$html = "价格: ¥99 和 ¥199";
-preg_match_all('/¥(\\d+)/', $html, $prices);
-// $prices[1] = ['99', '199']
-
-// preg_replace — 替换
-$clean = preg_replace('/[^a-zA-Z0-9]/', '_', $input);`,
-                python: `import re
-
-url = "https://www.example.com/path?id=123"
-
-# re.search — 搜索任意位置 (类似 preg_match with no ^)
-match = re.search(r'^https?://(.+?)/(.+)$', url)
-if match:
-    domain = match.group(1)
-    path = match.group(2)
-
-# re.findall — 匹配所有 (返回列表)
-html = "价格: ¥99 和 ¥199"
-prices = re.findall(r'¥(\\d+)', html)
-# ['99', '199']
-
-# re.sub — 替换
-clean = re.sub(r'[^a-zA-Z0-9]', '_', input_str)
-
-# re.compile — 预编译 (推荐!)
-url_pattern = re.compile(r'^https?://(?P<domain>.+?)/(?P<path>.+)$')
-match = url_pattern.match(url)
-if match:
-    print(match.group('domain'))  # 命名捕获组`,
-                note: 'Python 的 raw string `r""` 让正则表达式不需要双重转义。r\'\\d+\' 比 \'/\\\\d+/\' 更清晰。re.compile() 预编译正则对象，重复使用时性能更好。',
-              },
-              {
-                title: '正则高级用法对比',
-                php: `<?php
-// PHP: 分割、命名组、验证
-// preg_split
-$parts = preg_split('/[;,]\\s*/', "a, b; c, d");
-
-// 命名捕获组
-$pattern = '/(?P<year>\\d{4})-(?P<month>\\d{2})-(?P<day>\\d{2})/';
-preg_match($pattern, "2024-01-15", $m);
-// $m['year'] = '2024'
-
-// 贪婪 vs 非贪婪
-$html = '<b>bold</b> and <b>also bold</b>';
-preg_match_all('/<b>(.*?)<\\/b>/', $html, $matches);`,
-                python: `import re
-
-# re.split — 分割
-parts = re.split(r'[,;]\\s*', "a, b; c, d")
-# ['a', 'b', 'c', 'd']
-
-# 命名捕获组
-pattern = re.compile(r'(?P<year>\\d{4})-(?P<month>\\d{2})-(?P<day>\\d{2})')
-m = pattern.match("2024-01-15")
-print(m.group('year'))   # '2024'
-print(m.groupdict())    # {'year': '2024', 'month': '01', 'day': '15'}
-
-# 贪婪 vs 非贪婪
-html = '<b>bold</b> and <b>also bold</b>'
-re.findall(r'<b>(.*?)</b>', html)  # 非贪婪: ['bold', 'also bold']
-re.findall(r'<b>(.*)</b>', html)   # 贪婪: ['bold</b> and <b>also bold']
-
-# re.IGNORECASE 等标志
-re.findall(r'hello', 'Hello HELLO', re.IGNORECASE)  # ['Hello', 'HELLO']`,
-                note: 'Python 的 `groupdict()` 返回字典，比 PHP 的 $matches 关联数组更直观。re.IGNORECASE 等标志作为函数参数传入，比 PHP 的 /i 修饰符更清晰。',
-              },
-            ],
           },
           {
             title: 'f-string 高级: 日期与自定义格式',
@@ -583,6 +487,100 @@ for name, qty, price in items:
 # 苹果          5      3.50
 # 香蕉         12      2.00`,
             note: 'f-string 的日期格式化用 :%Y-%m-%d 语法，直接替代 PHP 的 format() 方法。对齐 + 格式组合 ({name:<8}{qty:>6}) 是生成表格式输出的利器。',
+          },
+        ],
+      },
+      {
+        title: '正则表达式 re 模块',
+        duration: '35 分钟',
+        description: 'PHP 开发者经常使用 preg_match/preg_replace 处理字符串。Python 的 re 模块功能等价但语法不同，配合 raw string 使用更加优雅。',
+        keyPoints: [
+          're.match() 从开头匹配，re.search() 搜索任意位置，re.findall() 返回所有匹配',
+          'Python 推荐 re.compile() 预编译正则，提升性能',
+          'raw string r"" 避免转义地狱，正则必备',
+          're.sub() 替代 PHP preg_replace，re.split() 替代 preg_split',
+          '命名捕获组 (?P<name>...) 比 PHP 的 (?P<name>) 更常用',
+        ],
+        codeExamples: [
+          {
+            title: '正则匹配对比',
+            php: `<?php
+// PHP: preg_match / preg_match_all
+$url = "https://www.example.com/path?id=123";
+
+// preg_match — 匹配一次
+if (preg_match('/^https?:\\/\\/(.+?)\\/(.+)$/', $url, $matches)) {
+    $domain = $matches[1];
+    $path = $matches[2];
+}
+
+// preg_match_all — 匹配所有
+$html = "价格: ¥99 和 ¥199";
+preg_match_all('/¥(\\d+)/', $html, $prices);
+// $prices[1] = ['99', '199']
+
+// preg_replace — 替换
+$clean = preg_replace('/[^a-zA-Z0-9]/', '_', $input);`,
+            python: `import re
+
+url = "https://www.example.com/path?id=123"
+
+# re.search — 搜索任意位置 (类似 preg_match with no ^)
+match = re.search(r'^https?://(.+?)/(.+)$', url)
+if match:
+    domain = match.group(1)
+    path = match.group(2)
+
+# re.findall — 匹配所有 (返回列表)
+html = "价格: ¥99 和 ¥199"
+prices = re.findall(r'¥(\\d+)', html)
+# ['99', '199']
+
+# re.sub — 替换
+clean = re.sub(r'[^a-zA-Z0-9]', '_', input_str)
+
+# re.compile — 预编译 (推荐!)
+url_pattern = re.compile(r'^https?://(?P<domain>.+?)/(?P<path>.+)$')
+match = url_pattern.match(url)
+if match:
+    print(match.group('domain'))  # 命名捕获组`,
+            note: 'Python 的 raw string `r""` 让正则表达式不需要双重转义。r\'\\d+\' 比 \'/\\\\d+/\' 更清晰。re.compile() 预编译正则对象，重复使用时性能更好。',
+          },
+          {
+            title: '正则高级用法对比',
+            php: `<?php
+// PHP: 分割、命名组、验证
+// preg_split
+$parts = preg_split('/[;,]\\s*/', "a, b; c, d");
+
+// 命名捕获组
+$pattern = '/(?P<year>\\d{4})-(?P<month>\\d{2})-(?P<day>\\d{2})/';
+preg_match($pattern, "2024-01-15", $m);
+// $m['year'] = '2024'
+
+// 贪婪 vs 非贪婪
+$html = '<b>bold</b> and <b>also bold</b>';
+preg_match_all('/<b>(.*?)<\\/b>/', $html, $matches);`,
+            python: `import re
+
+# re.split — 分割
+parts = re.split(r'[,;]\\s*', "a, b; c, d")
+# ['a', 'b', 'c', 'd']
+
+# 命名捕获组
+pattern = re.compile(r'(?P<year>\\d{4})-(?P<month>\\d{2})-(?P<day>\\d{2})')
+m = pattern.match("2024-01-15")
+print(m.group('year'))   # '2024'
+print(m.groupdict())    # {'year': '2024', 'month': '01', 'day': '15'}
+
+# 贪婪 vs 非贪婪
+html = '<b>bold</b> and <b>also bold</b>'
+re.findall(r'<b>(.*?)</b>', html)  # 非贪婪: ['bold', 'also bold']
+re.findall(r'<b>(.*)</b>', html)   # 贪婪: ['bold</b> and <b>also bold']
+
+# re.IGNORECASE 等标志
+re.findall(r'hello', 'Hello HELLO', re.IGNORECASE)  # ['Hello', 'HELLO']`,
+            note: 'Python 的 `groupdict()` 返回字典，比 PHP 的 $matches 关联数组更直观。re.IGNORECASE 等标志作为函数参数传入，比 PHP 的 /i 修饰符更清晰。',
           },
         ],
       },
@@ -1281,7 +1279,8 @@ queue.pop()                   # deque([1, 2, 3, 4, 5])
 # deque 实用方法
 queue.rotate(2)               # 右旋转 2 步
 queue.extendleft([0, -1])     # 批量左扩展
-queue maxlen = 10             # 限制最大长度 (自动丢弃另一端)
+# maxlen 只能在创建时设置:
+q = deque(maxlen=10)           # 达到上限时自动丢弃另一端
 
 # namedtuple: 带字段名的元组，比 class 更轻量
 User = namedtuple('User', ['name', 'age', 'email'])
@@ -3062,14 +3061,17 @@ async def root():
 
 @app.get("/users/{user_id}", response_model=UserResponse)
 async def show_user(user_id: int):
-    user = await User.get_or_none(id=user_id)
+    user = await session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="用户不存在")
     return user
 
 @app.post("/users", response_model=UserResponse, status_code=201)
 async def create_user(data: UserCreate):
-    user = await User.create(**data.model_dump())
+    user = User(**data.model_dump())
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
     return user
 
 # 依赖注入 (类似 Laravel 服务容器)
@@ -3356,7 +3358,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 # 生成 JWT Token
 def create_token(data: dict):
     return jwt.encode(
-        {**data, "exp": datetime.utcnow() + timedelta(hours=24)},
+        {**data, "exp": datetime.now(datetime.UTC) + timedelta(hours=24)},
         SECRET_KEY, algorithm=ALGORITHM,
     )
 
@@ -3367,7 +3369,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         user_id: int = payload.get("sub")
     except JWTError:
         raise HTTPException(status_code=401, detail="无效Token")
-    user = await User.get_or_none(id=user_id)
+    user = await session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=401, detail="用户不存在")
     return user
