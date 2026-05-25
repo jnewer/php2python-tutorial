@@ -1,0 +1,93 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { Copy, CheckCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+export function CodeBlock({ code, language, title, onCopy }: {
+  code: string;
+  language: 'php' | 'python';
+  title?: string;
+  onCopy?: (lang: string) => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lines = code.split('\n');
+  const lineCount = lines.length;
+
+  // Cleanup timer on unmount
+  useEffect(() => () => { if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current); }, []);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+    } catch {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea');
+      textarea.value = code;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+      } catch {
+        // ignore
+      }
+      document.body.removeChild(textarea);
+    }
+    setCopied(true);
+    onCopy?.(language === 'php' ? 'PHP' : 'Python');
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    copiedTimerRef.current = setTimeout(() => setCopied(false), 2000);
+  };
+
+  const isPhp = language === 'php';
+  return (
+    <div className={cn(
+      'rounded-xl border overflow-hidden',
+      isPhp
+        ? 'bg-gradient-to-br from-indigo-500/[0.07] to-purple-500/[0.07] border-indigo-500/20'
+        : 'bg-gradient-to-br from-amber-500/[0.07] to-yellow-500/[0.07] border-amber-500/20'
+    )}>
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/50 bg-background/50">
+        <div className="flex items-center gap-2">
+          <span className={cn(
+            'px-2 py-0.5 rounded-md text-[11px] font-bold tracking-wide uppercase',
+            isPhp
+              ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400'
+              : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
+          )}>
+            {isPhp ? 'PHP' : 'Python'}
+          </span>
+          {title && <span className="text-xs text-muted-foreground">{title}</span>}
+          <span className="text-[10px] text-muted-foreground/60 ml-auto mr-1">{lineCount} 行</span>
+        </div>
+        <button
+          onClick={handleCopy}
+          className="p-1 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
+          title={copied ? '已复制' : '复制代码'}
+          aria-label={copied ? '代码已复制' : '复制代码'}
+        >
+          {copied ? <CheckCircle className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+        </button>
+      </div>
+      <div className="max-h-[28rem] overflow-auto overscroll-contain">
+        <div className="flex min-w-0">
+          {/* Line numbers — sticky left column */}
+          <div className="sticky left-0 z-10 select-none border-r border-border/30 bg-muted/30 backdrop-blur-sm px-2 py-3 text-right shrink-0">
+            {lines.map((_, i) => (
+              <div key={i} className="text-[11px] leading-[1.7] text-muted-foreground/40 font-mono whitespace-nowrap">
+                {i + 1}
+              </div>
+            ))}
+          </div>
+          {/* Code content */}
+          <pre className="px-3 py-3 text-[13px] leading-[1.7] min-w-0 flex-1">
+            <code className="font-mono text-foreground/85 whitespace-pre" lang={language === 'php' ? 'php' : 'python'}>{code}</code>
+          </pre>
+        </div>
+      </div>
+    </div>
+  );
+}
