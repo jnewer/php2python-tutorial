@@ -12,7 +12,7 @@ export function FooterSection({
   overallProgress: number;
 }) {
   return (
-    <footer className="border-t bg-muted/30 pb-14 md:pb-0">
+    <footer className="border-t bg-muted/30 md:pb-0" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px))' }}>
       <div className="container mx-auto px-4 md:px-6 py-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-3">

@@ -4375,3 +4375,10 @@ async def test_delete_task(auth_client):
 // Re-export from separated files for backward compatibility
 export { phpToPythonMap } from './cheatsheet-data';
 export { learningPath } from './learning-path-data';
+
+// Computed counts (auto-derived from data, no more hardcoding)
+export const TOTAL_LESSONS = modules.reduce((sum, m) => sum + m.lessons.length, 0);
+export const TOTAL_CODE_EXAMPLES = modules.reduce(
+  (sum, m) => sum + m.lessons.reduce((s, l) => s + l.codeExamples.length, 0),
+  0,
+);

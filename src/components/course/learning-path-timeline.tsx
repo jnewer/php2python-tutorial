@@ -20,7 +20,7 @@ const PHASE_TO_MODULE: Record<number, number> = {
 export function LearningPathTimeline({ onPhaseClick }: { onPhaseClick?: (dayLabel: string, moduleId: number) => void }) {
   return (
     <div className="relative">
-      <div className="absolute left-6 md:left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-emerald-500 via-violet-500 to-fuchsia-500 opacity-30" />
+      <div className="absolute left-7 md:left-10 top-0 bottom-0 w-0.5 bg-gradient-to-b from-emerald-500 via-violet-500 to-fuchsia-500 opacity-30" />
 
       <div className="space-y-4">
         {learningPath.map((phase, idx) => (
@@ -39,10 +39,10 @@ export function LearningPathTimeline({ onPhaseClick }: { onPhaseClick?: (dayLabe
               aria-label={`跳转到第 ${phase.day} 天：${phase.title}`}
             >
               <div
-                className="relative z-10 w-12 md:w-16 h-12 md:h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-lg group-hover:scale-105 transition-transform"
+                className="relative z-10 w-14 md:w-20 h-14 md:h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-lg group-hover:scale-105 transition-transform"
                 style={{ backgroundColor: `${phase.color}15`, border: `2px solid ${phase.color}40` }}
               >
-                <span className="text-sm font-bold" style={{ color: phase.color }}>
+                <span className="text-[10px] md:text-xs font-bold whitespace-nowrap" style={{ color: phase.color }}>
                   Day {phase.day}
                 </span>
               </div>

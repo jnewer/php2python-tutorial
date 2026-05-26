@@ -19,7 +19,7 @@ export function Toast({ message, type = 'copy' }: { message: string; type?: 'cop
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 10, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[100] px-4 py-2.5 rounded-xl bg-foreground text-background shadow-xl flex items-center gap-2 text-sm font-medium pointer-events-none"
+          className="fixed left-1/2 -translate-x-1/2 z-[100] px-4 py-2.5 rounded-xl bg-foreground text-background shadow-xl flex items-center gap-2 text-sm font-medium pointer-events-none bottom-[calc(72px+env(safe-area-inset-bottom,0px))] md:bottom-6"
         >
           {icons[type]}
           {message}

@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { FadeIn } from '@/components/course/fade-in';
 import { ModuleCard } from '@/components/course/module-card';
-import { modules } from '@/lib/course-data';
+import { modules, TOTAL_LESSONS } from '@/lib/course-data';
 import { cn } from '@/lib/utils';
 import { DIFF_COLORS, DIFFICULTY_OPTIONS } from '@/lib/constants';
 import { updateProgress } from '@/lib/progress-store';
@@ -29,19 +29,22 @@ export function ModulesSection({ completedLessons, onCompleteLesson, onCopyCode,
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set([1]));
   const prevExpandRef = useRef<number | null | undefined>(null);
+  const [highlightedId, setHighlightedId] = useState<number | null>(null);
 
-  // Auto-expand module when expandModuleId changes
+  // Auto-expand module when expandModuleId changes, and highlight it
   useEffect(() => {
     if (expandModuleId != null && expandModuleId !== prevExpandRef.current) {
       prevExpandRef.current = expandModuleId;
       setExpandedModules(prev => new Set([...prev, expandModuleId]));
+      setHighlightedId(expandModuleId);
+      const timer = setTimeout(() => setHighlightedId(null), 2000);
+      return () => clearTimeout(timer);
     }
   }, [expandModuleId]);
 
-  const totalLessons = 36;
   const completedCount = completedLessons.size;
-  const overallProgress = totalLessons > 0 ? (completedCount / totalLessons) * 100 : 0;
-  const isAllComplete = completedCount === totalLessons && totalLessons > 0;
+  const overallProgress = TOTAL_LESSONS > 0 ? (completedCount / TOTAL_LESSONS) * 100 : 0;
+  const isAllComplete = completedCount === TOTAL_LESSONS && TOTAL_LESSONS > 0;
 
   const filteredModules = useMemo(() => {
     return modules.filter(m => {
@@ -156,7 +159,7 @@ export function ModulesSection({ completedLessons, onCompleteLesson, onCopyCode,
                   <div>
                     <h3 className="font-semibold text-sm">学习进度</h3>
                     <p className="text-xs text-muted-foreground">
-                      已完成 {completedCount} / {totalLessons} 个课时
+                      已完成 {completedCount} / {TOTAL_LESSONS} 个课时
                       {completedCount > 0 && (
                         <span className="text-foreground/70">
                           {' '}· 进度已自动保存
@@ -348,6 +351,7 @@ export function ModulesSection({ completedLessons, onCompleteLesson, onCopyCode,
                 <ModuleCard
                   module={module}
                   isExpanded={expandedModules.has(module.id)}
+                  highlighted={highlightedId === module.id}
                   onToggle={() => toggleModule(module.id)}
                   completedLessons={completedLessons}
                   onCompleteLesson={onCompleteLesson}

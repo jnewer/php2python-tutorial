@@ -4,12 +4,14 @@ import { cn } from '@/lib/utils';
 import { AnimatedCounter } from '@/components/course/animated-counter';
 import { FadeIn } from '@/components/course/fade-in';
 import { Layers, BookOpen, Code2, Terminal } from 'lucide-react';
+import { TOTAL_LESSONS, TOTAL_CODE_EXAMPLES } from '@/lib/course-data';
+import { phpToPythonMap } from '@/lib/cheatsheet-data';
 
 const computedStats = [
   { value: 8, suffix: '', label: '核心模块', icon: Layers, color: 'text-violet-600 dark:text-violet-400' },
-  { value: 36, suffix: '', label: '课时内容', icon: BookOpen, color: 'text-amber-600 dark:text-amber-400' },
-  { value: 63, suffix: '', label: '代码对比', icon: Code2, color: 'text-emerald-600 dark:text-emerald-400' },
-  { value: 38, suffix: '', label: '语法速查', icon: Terminal, color: 'text-rose-600 dark:text-rose-400' },
+  { value: TOTAL_LESSONS, suffix: '', label: '课时内容', icon: BookOpen, color: 'text-amber-600 dark:text-amber-400' },
+  { value: TOTAL_CODE_EXAMPLES, suffix: '', label: '代码对比', icon: Code2, color: 'text-emerald-600 dark:text-emerald-400' },
+  { value: phpToPythonMap.length, suffix: '', label: '语法速查', icon: Terminal, color: 'text-rose-600 dark:text-rose-400' },
 ];
 
 export function StatsSection() {

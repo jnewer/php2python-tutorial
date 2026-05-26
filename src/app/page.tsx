@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 import { subscribeProgress, getProgressSnapshot, getServerProgressSnapshot, updateProgress } from '@/lib/progress-store';
 import { HEADER_HEIGHT, NAV_ITEMS } from '@/lib/constants';
+import { TOTAL_LESSONS, modules } from '@/lib/course-data';
 import { NavigationBar } from '@/components/sections/navigation-bar';
 import { HeroSection } from '@/components/sections/hero-section';
 import { StatsSection } from '@/components/sections/stats-section';
@@ -23,8 +24,7 @@ export default function PythonCoursePage() {
   const completedLessons = useSyncExternalStore(subscribeProgress, getProgressSnapshot, getServerProgressSnapshot);
 
   const completedCount = completedLessons.size;
-  const totalLessons = 36;
-  const overallProgress = totalLessons > 0 ? (completedCount / totalLessons) * 100 : 0;
+  const overallProgress = TOTAL_LESSONS > 0 ? (completedCount / TOTAL_LESSONS) * 100 : 0;
 
   // Unified toast
   const showToast = useCallback((msg: string, type: 'complete' | 'uncomplete' | 'copy') => {
@@ -54,6 +54,29 @@ export default function PythonCoursePage() {
     }
   }, []);
 
+  // "继续学习"：找到第一个未完成的课时所属模块，滚动并展开
+  const handleContinueLearning = useCallback((moduleId: number) => {
+    // Find the first module with incomplete lessons
+    let targetModuleId = moduleId;
+    if (moduleId === 0) {
+      // Auto-detect: find first module that has any incomplete lesson
+      for (const mod of modules) {
+        const hasIncomplete = mod.lessons.some(
+          lesson => !completedLessons.has(`${mod.id}-${lesson.title}`)
+        );
+        if (hasIncomplete) {
+          targetModuleId = mod.id;
+          break;
+        }
+      }
+      // If all complete, go to first module
+      if (targetModuleId === 0) targetModuleId = 1;
+    }
+    setExpandModuleId(targetModuleId);
+    // Small delay so expand state settles before scrolling
+    setTimeout(() => scrollToSection('modules'), 100);
+  }, [completedLessons, scrollToSection]);
+
   // Active section tracking via IntersectionObserver
   useEffect(() => {
     const sectionIds = NAV_ITEMS.map(n => n.id);
@@ -79,7 +102,11 @@ export default function PythonCoursePage() {
       <NavigationBar activeSection={activeSection} onScrollTo={scrollToSection} />
 
       <main className="flex-1">
-        <HeroSection onScrollTo={scrollToSection} />
+        <HeroSection
+          onScrollTo={scrollToSection}
+          onContinueLearning={handleContinueLearning}
+          completedLessonCount={completedCount}
+        />
         <StatsSection />
         <RoadmapSection onExpandModule={setExpandModuleId} />
         <ModulesSection
@@ -94,7 +121,7 @@ export default function PythonCoursePage() {
 
       <FooterSection
         completedCount={completedCount}
-        totalLessons={totalLessons}
+        totalLessons={TOTAL_LESSONS}
         overallProgress={overallProgress}
       />
 

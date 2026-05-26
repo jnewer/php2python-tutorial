@@ -28,9 +28,10 @@ import { quizData } from '@/lib/quiz-data';
 import { cn } from '@/lib/utils';
 import type { Module } from '@/lib/course-data';
 
-export function ModuleCard({ module, isExpanded, onToggle, completedLessons, onCompleteLesson, onCopyCode, showToast }: {
+export function ModuleCard({ module, isExpanded, highlighted, onToggle, completedLessons, onCompleteLesson, onCopyCode, showToast }: {
   module: Module;
   isExpanded: boolean;
+  highlighted?: boolean;
   onToggle: () => void;
   completedLessons: Set<string>;
   onCompleteLesson: (key: string) => void;
@@ -67,9 +68,10 @@ export function ModuleCard({ module, isExpanded, onToggle, completedLessons, onC
     <>
       <Card className={cn(
         'overflow-hidden transition-all duration-300 border-2',
-        isExpanded
+        highlighted && 'animate-module-highlight border-amber-500/60 shadow-lg shadow-amber-500/10',
+        isExpanded && !highlighted
           ? 'border-primary/30 shadow-lg shadow-primary/5'
-          : 'border-border hover:border-primary/15 hover:shadow-md'
+          : !highlighted && 'border-border hover:border-primary/15 hover:shadow-md'
       )}>
         <button
           onClick={onToggle}

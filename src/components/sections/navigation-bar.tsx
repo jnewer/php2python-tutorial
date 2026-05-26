@@ -111,7 +111,7 @@ export function NavigationBar({
       </header>
 
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-lg" aria-label="底部快速导航">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }} aria-label="底部快速导航">
         <div className="flex items-center justify-around py-1">
           {NAV_ITEMS.map(item => (
             <button
@@ -160,7 +160,7 @@ function ReadingProgressBar() {
   }, []);
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[60] h-0.5">
+    <div className="fixed top-0 left-0 right-0 z-[60] h-0.5" role="progressbar" aria-valuenow={Math.round(scrollProgress)} aria-valuemin={0} aria-valuemax={100} aria-label={`阅读进度 ${Math.round(scrollProgress)}%`}>
       <motion.div
         className="h-full bg-gradient-to-r from-amber-500 via-violet-500 to-fuchsia-500"
         style={{ width: `${scrollProgress}%` }}
